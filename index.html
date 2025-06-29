@@ -249,7 +249,7 @@ const phrases = {
       const phrase = phrases[number] || `Number ${number}`;
       document.getElementById('phraseDisplay').textContent = phrase;
 
-      const msg = new SpeechSynthesisUtterance(`Number ${number}, ${phrase}`);
+      const msg = new SpeechSynthesisUtterance(`Number ${number}`);
       msg.lang = 'en-IN';
       window.speechSynthesis.cancel();
       speechSynthesis.speak(msg);

@@ -41,11 +41,6 @@
       text-align: center;
     }
 
-    .title-section h2 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-
     .title-section h1 {
       margin: 0.5rem 0;
       font-family: 'Comic Sans MS', cursive, sans-serif;
@@ -150,12 +145,18 @@
       color: #2b2826;
       border: 1px solid #583625;
       border-radius: 8px;
+      transition: all 0.3s ease;
     }
 
     .called {
       background-color: #583625;
       color: white;
       text-decoration: line-through;
+    }
+
+    .last-called {
+      border: 3px solid #e18222;
+      box-shadow: 0 0 10px #e18222;
     }
   </style>
 </head>
@@ -191,6 +192,7 @@
     </div>
 
     <button id="startButton" onclick="startGame()">Start Game</button>
+    <button id="pauseButton" onclick="togglePause()" disabled>Pause</button>
     <button onclick="resetGame()">Reset Game</button>
   </div>
 
@@ -199,30 +201,9 @@
   </div>
 
   <script>
-const phrases = {
-      1: "Lone ranger", 2: "One little duck", 3: "Happy family", 4: "Murgi chor", 5: "Hum paanch",
-      6: "Bottom heavy", 7: "Lucky no. Seven", 8: "One fat major", 9: "You are mine", 10: "A big fat hen",
-      11: "Two heavenly legs", 12: "One dozen", 13: "Bakers dozen", 14: "Valentine’s Day", 15: "Yet to be kissed",
-      16: "Sweet sixteen", 17: "Dancing Queen", 18: "Voting age", 19: "Last of the teens", 20: "One score",
-      21: "President’s salute", 22: "Two little ducks", 23: "You and me", 24: "Two dozen", 25: "Quarter",
-      26: "Republic Day", 27: "Gateway to heaven", 28: "Duck and its mate", 29: "In your prime", 30: "Women get flirty",
-      31: "Time for fun", 32: "Mouth Full", 33: "All the 3s", 34: "Dil mange more", 35: "Flirty wife",
-      36: "Popular size", 37: "Mixed luck", 38: "Oversize", 39: "Watch your waistline", 40: "Naughty 40",
-      41: "Life’s begun", 42: "Quit India Movement", 43: "Pain in the knee", 44: "All the fours", 45: "Halfway there",
-      46: "Up to tricks", 47: "Year of Independence", 48: "Four dozen", 49: "Rise and shine", 50: "Half a century",
-      51: "Charity begins", 52: "Pack of cards", 53: "Stuck in a tree", 54: "Clean the floor", 55: "All the fives",
-      56: "Pick up sticks", 57: "Mutiny Year", 58: "Make them wait", 59: "Just retired", 60: "Five dozen",
-      61: "Bakers bun", 62: "Turn the screw", 63: "Tickle me", 64: "Hard core", 65: "Old age pension",
-      66: "Chakke pe chakka", 67: "Made in heaven", 68: "Check your weight", 69: "Your place or mine", 70: "Lucky blind",
-      71: "Bang the drum", 72: "Lucky 2", 73: "Under the tree", 74: "Still want more", 75: "Lucky Five",
-      76: "Lucky six", 77: "Two hockey sticks", 78: "Heaven’s gate", 79: "One more time", 80: "Gandhi’s breakfast",
-      81: "Corner shot", 82: "Last of the two", 83: "India wins WC", 84: "Last of the chors", 85: "Staying alive",
-      86: "Between the sticks", 87: "Grandpa", 88: "Two fat ladies", 89: "All but one", 90: "Top of the house"
-    };
-
-
     let remaining = Array.from({ length: 90 }, (_, i) => i + 1);
     let intervalId = null;
+    let isPaused = false;
 
     const grid = document.getElementById('grid');
     for (let i = 1; i <= 90; i++) {
@@ -244,10 +225,12 @@ const phrases = {
       const number = remaining.splice(index, 1)[0];
 
       document.getElementById('numberDisplay').textContent = number;
-      document.getElementById('cell-' + number).classList.add('called');
 
-      const phrase = phrases[number] || `Number ${number}`;
-      document.getElementById('phraseDisplay').textContent = phrase;
+      document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('last-called'));
+      const cell = document.getElementById('cell-' + number);
+      cell.classList.add('called', 'last-called');
+
+      document.getElementById('phraseDisplay').textContent = ""; // No phrases now
 
       const msg = new SpeechSynthesisUtterance(`Number ${number}`);
       msg.lang = 'en-IN';
@@ -257,24 +240,58 @@ const phrases = {
 
     function startGame() {
       document.getElementById('startButton').disabled = true;
+      document.getElementById('pauseButton').disabled = false;
+      document.getElementById('phraseDisplay').textContent = "";
+
       callNextNumber();
       intervalId = setInterval(callNextNumber, 10000);
+    }
+
+    function togglePause() {
+      if (isPaused) {
+        intervalId = setInterval(callNextNumber, 10000);
+        document.getElementById('phraseDisplay').textContent = "";
+        document.getElementById('pauseButton').textContent = "Pause";
+        isPaused = false;
+      } else {
+        clearInterval(intervalId);
+        document.getElementById('phraseDisplay').textContent = "Game Paused";
+        document.getElementById('pauseButton').textContent = "Resume";
+        isPaused = true;
+      }
     }
 
     function resetGame() {
       clearInterval(intervalId);
       intervalId = null;
       remaining = Array.from({ length: 90 }, (_, i) => i + 1);
+      isPaused = false;
 
       document.getElementById('numberDisplay').textContent = "--";
       document.getElementById('phraseDisplay').textContent = "";
 
       for (let i = 1; i <= 90; i++) {
-        document.getElementById('cell-' + i).classList.remove('called');
+        document.getElementById('cell-' + i).classList.remove('called', 'last-called');
       }
 
       document.getElementById('startButton').disabled = false;
+      document.getElementById('pauseButton').disabled = true;
+      document.getElementById('pauseButton').textContent = "Pause";
     }
+
+    // Keyboard shortcut (spacebar) to toggle pause/resume
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && document.getElementById('pauseButton').disabled === false) {
+        e.preventDefault();
+        togglePause();
+      }
+    });
+
+    // Warn before page reload
+    window.addEventListener('beforeunload', (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    });
   </script>
 </body>
 </html>
